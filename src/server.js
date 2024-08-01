@@ -1,14 +1,12 @@
 var createError = require('http-errors');
 var express = require('express');
-var path = require('path');
+const cors = require('cors');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
-
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
+const dbConnection = require('./config/dbConfig');
 
 var server = express();
-
+server.use(cors());
 server.use(logger('dev'));
 server.use(express.json());
 server.use(express.urlencoded({ extended: false }));
@@ -20,6 +18,32 @@ server.get('/', (req, res) => {
     ok: true,
     message: 'root route',
   });
+});
+/* server.get('/sponsors', (req, res) => {
+  return res.status(200).json({
+    ok: true,
+    message: 'root route',
+  });
+}); */
+server.get('/sponsors', async (req, res) => {
+  // return res.status(200).json({
+  //   ok: true,
+  //   message: 'root route',
+  // });
+  let connection
+  try {
+     connection = await dbConnection.getConnection();
+    const [rows] = await connection.query(
+      'SELECT * FROM sponsers ORDER BY Payment DESC LIMIT 30'
+    );
+   
+    return res.status(200).json({ ok: true, result: rows });
+  } catch (err) {
+    return res.status(500).json({ ok: false, message: err.message });
+  }
+  finally{
+       connection.release();
+  }
 });
 server.use(function (req, res, next) {
   next(createError(404));
